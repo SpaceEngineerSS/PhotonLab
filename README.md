@@ -4,6 +4,8 @@
 
 This project demonstrates how low-level systems programming (Rust) can be bridged with web technologies to visualize complex wave dynamics (refraction, interference, diffraction) at **60 FPS** on standard hardware.
 
+**🚀 [Live Demo on Vercel](https://photonlab-gamma.vercel.app)**
+
 ![PhotonLab Interface](./02_double_slit.png)
 
 ---
