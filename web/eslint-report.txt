@@ -1,0 +1,79 @@
+[0m[0m
+[0m[4mC:\Users\mehme\Desktop\PhotonLab\web\src\components\EnergyMonitor.tsx[24m[0m
+[0m  [2m27:13[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0mC:\Users\mehme\Desktop\PhotonLab\web\src\components\EnergyMonitor.tsx:27:13[0m
+[0m  25 |             // Simulation unstable - auto-pause[0m
+[0m  26 |             onPause();[0m
+[0m> 27 |             setShowAlert(true);[0m
+[0m     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  28 |         }[0m
+[0m  29 |     }, [energy, isRunning, onPause]);[0m
+[0m  30 |  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[4mC:\Users\mehme\Desktop\PhotonLab\web\src\components\FPSCounter.tsx[24m[0m
+[0m  [2m20:32[22m  [31merror[39m  Error: Cannot call impure function during render[0m
+[0m[0m
+[0m`performance.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).[0m
+[0m[0m
+[0mC:\Users\mehme\Desktop\PhotonLab\web\src\components\FPSCounter.tsx:20:32[0m
+[0m  18 |     const [fps, setFps] = useState(0);[0m
+[0m  19 |     const frameTimesRef = useRef<number[]>([]);[0m
+[0m> 20 |     const lastTimeRef = useRef(performance.now());[0m
+[0m     |                                ^^^^^^^^^^^^^^^^^ Cannot call impure function[0m
+[0m  21 |[0m
+[0m  22 |     useEffect(() => {[0m
+[0m  23 |         if (!autoTrack) return;  [2mreact-hooks/purity[22m[0m
+[0m[0m
+[0m[4mC:\Users\mehme\Desktop\PhotonLab\web\src\hooks\useSimulation.ts[24m[0m
+[0m   [2m65:35[22m  [31merror[39m  Error: Cannot call impure function during render[0m
+[0m[0m
+[0m`performance.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).[0m
+[0m[0m
+[0mC:\Users\mehme\Desktop\PhotonLab\web\src\hooks\useSimulation.ts:65:35[0m
+[0m  63 |   const animationIdRef = useRef<number>(0);[0m
+[0m  64 |   const isRunningRef = useRef(false);[0m
+[0m> 65 |   const lastFrameTimeRef = useRef(performance.now());[0m
+[0m     |                                   ^^^^^^^^^^^^^^^^^ Cannot call impure function[0m
+[0m  66 |   const frameCountRef = useRef(0);[0m
+[0m  67 |[0m
+[0m  68 |   // React state for UI updates                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   [2mreact-hooks/purity[22m[0m
+[0m  [2m178:52[22m  [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`runSimulation` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0mC:\Users\mehme\Desktop\PhotonLab\web\src\hooks\useSimulation.ts:178:52[0m
+[0m  176 |[0m
+[0m  177 |     // Continue loop[0m
+[0m> 178 |     animationIdRef.current = requestAnimationFrame(runSimulation);[0m
+[0m      |                                                    ^^^^^^^^^^^^^ `runSimulation` accessed before it is declared[0m
+[0m  179 |   }, []);[0m
+[0m  180 |[0m
+[0m  181 |   // Control functions - memoized to prevent recreation[0m
+[0m[0m
+[0mC:\Users\mehme\Desktop\PhotonLab\web\src\hooks\useSimulation.ts:128:3[0m
+[0m  126 |[0m
+[0m  127 |   // Animation loop[0m
+[0m> 128 |   const runSimulation = useCallback(() => {[0m
+[0m      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 129 |     const grid = gridRef.current;[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 130 |     if (!grid || !isRunningRef.current) return;[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 178 |     animationIdRef.current = requestAnimationFrame(runSimulation);[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 179 |   }, []);[0m
+[0m      | ^^^^^^^^^^ `runSimulation` is declared here[0m
+[0m  180 |[0m
+[0m  181 |   // Control functions - memoized to prevent recreation[0m
+[0m  182 |   const controls: SimulationControls = useMemo(() => ({  [2mreact-hooks/immutability[22m[0m
+[0m[0m
+[0m[31m[1m✖ 4 problems (4 errors, 0 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m

@@ -1,0 +1,36 @@
+/* Controls Component Styles */
+
+.controls-panel {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.control-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    min-width: 80px;
+    justify-content: center;
+}
+
+.control-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+}
+
+.control-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pulse-btn {
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+.pulse-btn:hover:not(:disabled) {
+    background: rgba(255, 170, 0, 0.15);
+}

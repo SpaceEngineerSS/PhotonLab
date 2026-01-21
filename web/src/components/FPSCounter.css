@@ -1,0 +1,38 @@
+/* FPSCounter Component Styles */
+
+.fps-counter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-core);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.fps-value {
+    font-weight: 700;
+    min-width: 24px;
+    text-align: right;
+}
+
+.fps-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* Performance Colors */
+.fps-counter.good .fps-value {
+    color: var(--success);
+}
+
+.fps-counter.ok .fps-value {
+    color: var(--warning);
+}
+
+.fps-counter.bad .fps-value {
+    color: var(--danger);
+}

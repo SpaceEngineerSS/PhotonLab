@@ -1,0 +1,363 @@
+/**
+ * PhotonLab - Scientific Lab Theme
+ * CSS Grid Layout with Dark Mode Aesthetic
+ */
+
+/* ============================================
+   DESIGN TOKENS
+   ============================================ */
+:root {
+    /* Scientific Palette */
+    --bg-core: #0a0b10;
+    --bg-panel: #13151a;
+    --bg-hover: #1a1d24;
+    --border: #2d313a;
+    --border-light: #3d424d;
+
+    /* Accent Colors */
+    --accent: #00f0ff;
+    --accent-dim: rgba(0, 240, 255, 0.1);
+    --accent-glow: rgba(0, 240, 255, 0.3);
+    --success: #00ffa3;
+    --danger: #ff0055;
+    --warning: #ffaa00;
+
+    /* Text */
+    --text-primary: #ececec;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+
+    /* Layout */
+    --sidebar-width: 260px;
+    --footer-height: 56px;
+    --header-height: 48px;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+
+    /* Typography */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+
+    /* Effects */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --transition: 0.15s ease;
+}
+
+/* ============================================
+   GLOBAL RESET
+   ============================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    background-color: var(--bg-core);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================
+   MAIN GRID LAYOUT
+   ============================================ */
+.app-container {
+    display: grid;
+    height: 100vh;
+    width: 100vw;
+    grid-template-areas:
+        "header header"
+        "sidebar canvas"
+        "sidebar footer";
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--header-height) 1fr var(--footer-height);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.header-area {
+    grid-area: header;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: 0 var(--space-lg);
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+}
+
+.app-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0;
+}
+
+.app-icon {
+    font-size: 20px;
+}
+
+.app-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.header-spacer {
+    flex: 1;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.sidebar-area {
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    padding: var(--space-lg);
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: var(--space-sm) 0;
+}
+
+/* ============================================
+   CANVAS AREA
+   ============================================ */
+.canvas-area {
+    grid-area: canvas;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+}
+
+.canvas-area canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Monitor Container */
+.monitor-container {
+    position: absolute;
+    right: var(--space-lg);
+    bottom: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    z-index: 10;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.footer-area {
+    grid-area: footer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    padding: 0 var(--space-lg);
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+}
+
+.status-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.status-item {
+    color: var(--text-secondary);
+}
+
+.status-item strong {
+    color: var(--text-primary);
+}
+
+.status-item.success {
+    color: var(--success);
+}
+
+.status-item.danger {
+    color: var(--danger);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-core);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+button:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button.active,
+button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 600;
+}
+
+button.active:hover,
+button.primary:hover {
+    filter: brightness(1.1);
+}
+
+button.danger {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+button.danger:hover {
+    background: rgba(255, 0, 85, 0.1);
+}
+
+/* ============================================
+   MONITOR PANELS
+   ============================================ */
+.monitor-panel {
+    background: rgba(10, 11, 16, 0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(8px);
+    padding: var(--space-md);
+}
+
+/* ============================================
+   FPS COUNTER
+   ============================================ */
+.fps-counter {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-core);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+/* ============================================
+   ENERGY MONITOR
+   ============================================ */
+.energy-monitor {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.energy-monitor .energy-label {
+    color: var(--text-secondary);
+}
+
+.energy-monitor .energy-value {
+    font-weight: 600;
+}
+
+.energy-monitor.low .energy-value {
+    color: var(--success);
+}
+
+.energy-monitor.medium .energy-value {
+    color: var(--warning);
+}
+
+.energy-monitor.high .energy-value {
+    color: var(--danger);
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-core);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-light);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .app-container {
+        grid-template-areas:
+            "header"
+            "canvas"
+            "footer";
+        grid-template-columns: 1fr;
+        grid-template-rows: var(--header-height) 1fr var(--footer-height);
+    }
+
+    .sidebar-area {
+        display: none;
+    }
+
+    .app-subtitle {
+        display: none;
+    }
+}

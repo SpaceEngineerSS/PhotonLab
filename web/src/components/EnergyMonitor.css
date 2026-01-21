@@ -1,0 +1,137 @@
+/* EnergyMonitor Component Styles */
+
+.energy-monitor {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.energy-label {
+    color: var(--text-secondary);
+}
+
+.energy-value {
+    font-weight: 600;
+}
+
+/* Energy level colors */
+.energy-monitor.low .energy-value {
+    color: var(--success);
+}
+
+.energy-monitor.medium .energy-value {
+    color: var(--warning);
+}
+
+.energy-monitor.high .energy-value {
+    color: var(--danger);
+}
+
+.energy-monitor.critical {
+    background: rgba(255, 0, 85, 0.15);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+}
+
+.energy-monitor.critical .energy-value {
+    color: var(--danger);
+    animation: pulse 0.5s ease infinite alternate;
+}
+
+@keyframes pulse {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0.5;
+    }
+}
+
+/* Instability Alert Modal */
+.instability-alert-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.instability-alert {
+    background: var(--bg-panel);
+    border: 2px solid var(--danger);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    max-width: 380px;
+    text-align: center;
+    animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.alert-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-md);
+}
+
+.instability-alert h3 {
+    color: var(--danger);
+    margin: 0 0 var(--space-sm) 0;
+    font-size: 18px;
+}
+
+.instability-alert p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 14px;
+}
+
+.alert-hint {
+    font-size: 12px !important;
+    color: var(--text-muted) !important;
+    margin-top: var(--space-md) !important;
+}
+
+.instability-alert button {
+    margin-top: var(--space-lg);
+    padding: var(--space-sm) var(--space-xl);
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.instability-alert button:hover {
+    filter: brightness(1.1);
+}

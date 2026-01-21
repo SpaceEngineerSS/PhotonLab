@@ -1,0 +1,51 @@
+# =========================
+# PhotonLab .gitignore
+# =========================
+
+# -------------------------
+# Rust / Wasm
+# -------------------------
+rust-core/target/
+rust-core/pkg/
+*.wasm
+*.wasm.map
+
+# -------------------------
+# Node.js / NPM
+# -------------------------
+web/node_modules/
+web/dist/
+web/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# -------------------------
+# IDE / Editor
+# -------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Environment
+# -------------------------
+.env
+.env.local
+.env.*.local
+
+# -------------------------
+# Build Artifacts
+# -------------------------
+*.log
+*.tmp
+*.temp
+
+# -------------------------
+# Keep Screenshots for README
+# -------------------------
+# (screenshots are intentionally tracked)

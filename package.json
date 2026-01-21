@@ -1,0 +1,12 @@
+{
+    "name": "photonlab",
+    "version": "0.1.0",
+    "private": true,
+    "description": "FDTD Electromagnetic Simulator - Web-based research tool",
+    "scripts": {
+        "dev": "cd web && npm run dev",
+        "build": "cd web && npm run build",
+        "build:wasm": "cd rust-core && wasm-pack build --target web",
+        "preview": "cd web && npm run preview"
+    }
+}
