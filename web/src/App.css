@@ -28,9 +28,9 @@
     --text-muted: #6b7280;
 
     /* Layout */
-    --sidebar-width: 260px;
-    --footer-height: 56px;
-    --header-height: 48px;
+    --sidebar-width: 280px;
+    --footer-height: 70px;
+    --header-height: 50px;
 
     /* Spacing */
     --space-xs: 4px;
@@ -64,6 +64,9 @@
 html,
 body {
     height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
 }
 
@@ -81,8 +84,12 @@ body {
    ============================================ */
 .app-container {
     display: grid;
-    height: 100vh;
     width: 100vw;
+    height: 100vh;
+    /* Fallback for older browsers */
+    height: 100dvh;
+    /* Dynamic viewport height for mobile */
+    overflow: hidden;
     grid-template-areas:
         "header header"
         "sidebar canvas"
@@ -394,18 +401,21 @@ button.danger:hover {
     .sidebar-area {
         position: fixed;
         top: 0;
-        left: -280px;
+        left: 0;
         width: 260px;
         height: 100vh;
+        height: 100dvh;
         z-index: 1000;
-        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 10px 0 20px rgba(0, 0, 0, 0.5);
+        border-right: 1px solid var(--accent);
         display: flex;
         flex-direction: column;
     }
 
     .sidebar-area.open {
-        left: 0;
+        transform: translateX(0);
     }
 
     .menu-toggle {
