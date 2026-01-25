@@ -6,9 +6,8 @@
 # Rust / Wasm
 # -------------------------
 rust-core/target/
-rust-core/pkg/
-*.wasm
-*.wasm.map
+# (pkg is intentionally tracked for Vercel deployment)
+
 
 # -------------------------
 # Node.js / NPM

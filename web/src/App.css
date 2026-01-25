@@ -341,6 +341,43 @@ button.danger:hover {
 }
 
 /* ============================================
+   MOBILE MENU TOGGLE
+   ============================================ */
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--accent);
+    padding: var(--space-sm);
+    margin-right: var(--space-sm);
+    cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.menu-toggle:hover {
+    background: var(--bg-hover);
+}
+
+.mobile-close {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    padding: var(--space-sm);
+    cursor: pointer;
+    text-align: right;
+    width: 100%;
+    min-height: 44px;
+}
+
+.mobile-close:hover {
+    color: var(--accent);
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 768px) {
@@ -353,11 +390,68 @@ button.danger:hover {
         grid-template-rows: var(--header-height) 1fr var(--footer-height);
     }
 
+    /* Sidebar becomes a drawer */
     .sidebar-area {
-        display: none;
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 260px;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-area.open {
+        left: 0;
+    }
+
+    .menu-toggle {
+        display: flex;
+    }
+
+    .mobile-close {
+        display: block;
     }
 
     .app-subtitle {
+        display: none;
+    }
+
+    /* Adjust Footer for touch */
+    .footer-area {
+        padding: 0 var(--space-sm);
+        gap: var(--space-sm);
+    }
+
+    /* Make buttons larger for touch targets */
+    button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Status bar compact */
+    .status-bar {
+        gap: var(--space-sm);
+        font-size: 11px;
+    }
+
+    /* Monitor container repositioning */
+    .monitor-container {
+        right: var(--space-sm);
+        bottom: var(--space-sm);
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .app-title {
+        font-size: 14px;
+    }
+
+    .status-item:not(.success):not(.danger) {
         display: none;
     }
 }

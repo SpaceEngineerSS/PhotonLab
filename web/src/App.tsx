@@ -26,6 +26,9 @@ function App() {
         brushSize: 15,
     });
 
+    // Mobile sidebar toggle
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
     // Probe position state
     const [probePos, setProbePos] = useState<{ x: number; y: number } | null>(null);
     const [currentProbeValue, setCurrentProbeValue] = useState(0);
@@ -97,6 +100,13 @@ function App() {
         <div className="app-container">
             {/* HEADER */}
             <header className="header-area">
+                <button
+                    className="menu-toggle"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    aria-label="Toggle Menu"
+                >
+                    ☰
+                </button>
                 <h1 className="app-title">
                     <span className="app-icon">⚡</span>
                     PhotonLab
@@ -106,16 +116,27 @@ function App() {
                 <FPSCounter fps={state.fps} />
             </header>
 
-            {/* SIDEBAR */}
-            <aside className="sidebar-area">
+            {/* SIDEBAR (Mobile Slide-in) */}
+            <aside className={`sidebar-area ${sidebarOpen ? 'open' : ''}`}>
+                <button
+                    className="mobile-close"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-label="Close Menu"
+                >
+                    ✕
+                </button>
+                <ScenarioMenu onLoadScenario={(id) => {
+                    handleScenarioLoad(id);
+                    setSidebarOpen(false);
+                }} />
+                <div className="sidebar-divider" />
                 <Toolbar
                     state={toolState}
                     onChange={(partial) => setToolState(prev => ({ ...prev, ...partial }))}
                     onClearMaterials={() => gridRef.current?.clear_materials()}
                 />
-                <div className="sidebar-divider" />
-                <ScenarioMenu onLoadScenario={handleScenarioLoad} />
             </aside>
+
 
             {/* MAIN CANVAS */}
             <main className="canvas-area">

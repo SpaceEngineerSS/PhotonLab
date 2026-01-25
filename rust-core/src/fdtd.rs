@@ -488,7 +488,7 @@ impl FDTDGrid {
 
     /// Load a preset scenario by ID
     /// 0=Empty, 1=DoubleSlit, 2=Waveguide, 3=ParabolicReflector,
-    /// 4=TotalInternalReflection, 5=PhotonicCrystal, 6=Lens
+    /// 4=TotalInternalReflection, 5=PhotonicCrystal, 6=Lens, 7=FresnelLens
     #[wasm_bindgen]
     pub fn load_preset(&mut self, scenario_id: u8) {
         use crate::scenarios::ScenarioBuilder;
@@ -507,6 +507,7 @@ impl FDTDGrid {
             4 => builder.build_tir_prism(),
             5 => builder.build_photonic_crystal(),
             6 => builder.build_lens(),
+            7 => builder.build_fresnel_lens(),
             _ => Vec::new(),
         };
 
@@ -519,7 +520,7 @@ impl FDTDGrid {
     /// Get scenario count
     #[wasm_bindgen]
     pub fn get_scenario_count() -> u8 {
-        7 // 0-6
+        8 // 0-7
     }
 
     // ========================================================================

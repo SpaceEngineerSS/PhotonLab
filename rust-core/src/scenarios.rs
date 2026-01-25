@@ -24,6 +24,8 @@ pub enum ScenarioId {
     PhotonicCrystal,
     /// Lens focusing demonstration
     Lens,
+    /// Fresnel zone plate lens
+    FresnelLens,
 }
 
 /// Get scenario name by ID
@@ -37,6 +39,7 @@ pub fn get_scenario_name(id: u8) -> String {
         4 => "Total Internal Reflection".to_string(),
         5 => "Photonic Crystal".to_string(),
         6 => "Lens".to_string(),
+        7 => "Fresnel Lens".to_string(),
         _ => "Unknown".to_string(),
     }
 }
@@ -52,6 +55,7 @@ pub fn get_scenario_description(id: u8) -> String {
         4 => "Light trapping in glass prism".to_string(),
         5 => "Periodic dielectric structure".to_string(),
         6 => "Convex lens focusing".to_string(),
+        7 => "Fresnel zone plate focusing".to_string(),
         _ => "".to_string(),
     }
 }
@@ -275,6 +279,48 @@ impl ScenarioBuilder {
             for x in (left_edge as usize)..(right_edge as usize) {
                 if x < w {
                     cells.push((x, y, 1)); // Glass
+                }
+            }
+        }
+
+        cells
+    }
+
+    /// Build Fresnel Zone Plate Lens
+    /// Uses concentric dielectric rings to focus waves
+    pub fn build_fresnel_lens(&self) -> Vec<(usize, usize, u32)> {
+        let mut cells = Vec::new();
+        let w = self.width;
+        let h = self.height;
+
+        // Lens position (1/4 from left for good wave propagation distance)
+        let center_x = w / 4;
+        let center_y = h / 2;
+        let plate_thickness = 6;
+
+        // Fresnel zone plate parameters
+        // Formula: r_n = sqrt(2 * n * f * lambda)
+        let focal_length: f32 = 200.0;
+        let lambda: f32 = 20.0; // Wavelength matches typical source frequency
+
+        for y in 0..h {
+            let dy = (y as f32) - (center_y as f32);
+            let r = dy.abs();
+
+            // Calculate which Fresnel zone this radius falls into
+            // n = r² / (f * λ)
+            let n = (r.powi(2) / (focal_length * lambda)).floor() as i32;
+
+            // Place dielectric material in even zones (constructive interference)
+            if n % 2 == 0 && n < 20 {
+                // Only within the lens vertical extent
+                if r < (h as f32 / 3.0) {
+                    for dx in 0..plate_thickness {
+                        let x = center_x + dx;
+                        if x < w {
+                            cells.push((x, y, 1)); // Glass (ε ≈ 2.25)
+                        }
+                    }
                 }
             }
         }
