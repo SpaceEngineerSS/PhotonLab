@@ -5,6 +5,8 @@
 //! - Plane wave (uniform injection along a line)
 //! - Gaussian pulse (time-domain wavepacket)
 
+//! Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
+
 use wasm_bindgen::prelude::*;
 
 /// Source type enumeration
@@ -232,6 +234,181 @@ impl PlaneWaveSource {
     }
 }
 
+// ============================================================================
+// Phased Array Source (Beamforming)
+// ============================================================================
+
+/// Single element in a phased array
+#[wasm_bindgen]
+#[derive(Clone, Copy)]
+pub struct SourceElement {
+    pub x: usize,
+    pub y: usize,
+    pub phase_offset: f32,
+    pub amplitude: f32,
+}
+
+#[wasm_bindgen]
+impl SourceElement {
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: usize, y: usize, phase_offset: f32, amplitude: f32) -> SourceElement {
+        SourceElement {
+            x,
+            y,
+            phase_offset,
+            amplitude,
+        }
+    }
+}
+
+/// Phased Array Source for beamforming applications
+/// E(t) = Σ A_n * sin(ωt + φ_n) where φ_n is the phase offset for element n
+#[wasm_bindgen]
+pub struct PhasedArraySource {
+    elements: Vec<SourceElement>,
+    frequency: f32,
+    courant: f32,
+}
+
+#[wasm_bindgen]
+impl PhasedArraySource {
+    /// Create a linear phased array along y-axis at position x
+    #[wasm_bindgen(constructor)]
+    pub fn new_linear(
+        x: usize,
+        y_start: usize,
+        num_elements: usize,
+        spacing: usize,
+        frequency: f32,
+        courant: f32,
+    ) -> PhasedArraySource {
+        let mut elements = Vec::with_capacity(num_elements);
+        for i in 0..num_elements {
+            elements.push(SourceElement {
+                x,
+                y: y_start + i * spacing,
+                phase_offset: 0.0,
+                amplitude: 1.0,
+            });
+        }
+        PhasedArraySource {
+            elements,
+            frequency,
+            courant,
+        }
+    }
+
+    /// Set phase for a specific element (for beam steering)
+    pub fn set_element_phase(&mut self, index: usize, phase: f32) {
+        if index < self.elements.len() {
+            self.elements[index].phase_offset = phase;
+        }
+    }
+
+    /// Set progressive phase shift for beam steering
+    /// delta_phi: phase difference between adjacent elements
+    pub fn set_progressive_phase(&mut self, delta_phi: f32) {
+        for (i, elem) in self.elements.iter_mut().enumerate() {
+            elem.phase_offset = i as f32 * delta_phi;
+        }
+    }
+
+    /// Get number of elements
+    pub fn get_element_count(&self) -> usize {
+        self.elements.len()
+    }
+
+    /// Inject phased array into Ez field
+    pub fn inject(&self, ez: &mut [f32], t: f32, width: usize, height: usize) {
+        let omega = 2.0 * std::f32::consts::PI * self.frequency;
+
+        for elem in &self.elements {
+            if elem.x < width && elem.y < height {
+                let idx = elem.y * width + elem.x;
+                let value = elem.amplitude * (omega * t + elem.phase_offset).sin();
+                ez[idx] += value * self.courant;
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Gaussian Beam Source
+// ============================================================================
+
+/// Gaussian Beam Source with spatial intensity profile
+/// I(y) = I_0 * exp(-2(y-y_c)²/w²) where w is beam waist
+#[wasm_bindgen]
+pub struct GaussianBeamSource {
+    x: usize,
+    y_center: usize,
+    waist: f32,
+    frequency: f32,
+    amplitude: f32,
+    courant: f32,
+}
+
+#[wasm_bindgen]
+impl GaussianBeamSource {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        x: usize,
+        y_center: usize,
+        waist: f32,
+        frequency: f32,
+        amplitude: f32,
+        courant: f32,
+    ) -> GaussianBeamSource {
+        GaussianBeamSource {
+            x,
+            y_center,
+            waist: waist.max(1.0),
+            frequency,
+            amplitude,
+            courant,
+        }
+    }
+
+    /// Set beam waist (width at 1/e² intensity)
+    pub fn set_waist(&mut self, waist: f32) {
+        self.waist = waist.max(1.0);
+    }
+
+    /// Set center position
+    pub fn set_center(&mut self, y_center: usize) {
+        self.y_center = y_center;
+    }
+
+    /// Inject Gaussian beam into Ez field
+    pub fn inject(&self, ez: &mut [f32], t: f32, width: usize, height: usize) {
+        if self.x >= width {
+            return;
+        }
+
+        let omega = 2.0 * std::f32::consts::PI * self.frequency;
+        let time_factor = (omega * t).sin();
+        let w2 = self.waist * self.waist;
+
+        for y in 1..height - 1 {
+            let dy = y as f32 - self.y_center as f32;
+            let gaussian_profile = (-2.0 * dy * dy / w2).exp();
+            let value = self.amplitude * gaussian_profile * time_factor;
+
+            let idx = y * width + self.x;
+            ez[idx] += value * self.courant;
+        }
+    }
+
+    /// Get beam parameters for UI display
+    pub fn get_waist(&self) -> f32 {
+        self.waist
+    }
+
+    pub fn get_frequency(&self) -> f32 {
+        self.frequency
+    }
+}
+
 /// Probe for measuring field values at a specific point
 #[wasm_bindgen]
 pub struct Probe {
@@ -317,6 +494,112 @@ impl Probe {
     pub fn clear(&mut self) {
         self.buffer.fill(0.0);
         self.write_pos = 0;
+    }
+}
+
+// ============================================================================
+// Spectrum Analyzer (FFT-based)
+// ============================================================================
+
+use rustfft::{num_complex::Complex, FftPlanner};
+
+/// Spectrum Analyzer using FFT for frequency domain analysis
+/// Uses Hann windowing to reduce spectral leakage
+#[wasm_bindgen]
+pub struct SpectrumAnalyzer {
+    /// Input buffer size (must be power of 2 for FFT)
+    size: usize,
+    /// Hann window coefficients (pre-computed)
+    window: Vec<f32>,
+    /// FFT output buffer (magnitude in dB)
+    spectrum: Vec<f32>,
+    /// Scratch buffer for FFT computation
+    scratch: Vec<Complex<f32>>,
+}
+
+#[wasm_bindgen]
+impl SpectrumAnalyzer {
+    /// Create a new spectrum analyzer
+    /// size: FFT size (should be power of 2, e.g., 256, 512, 1024)
+    #[wasm_bindgen(constructor)]
+    pub fn new(size: usize) -> SpectrumAnalyzer {
+        let size = size.next_power_of_two();
+
+        let mut window = vec![0.0; size];
+        for i in 0..size {
+            window[i] =
+                0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (size - 1) as f32).cos());
+        }
+
+        SpectrumAnalyzer {
+            size,
+            window,
+            spectrum: vec![0.0; size / 2],
+            scratch: vec![Complex::new(0.0, 0.0); size],
+        }
+    }
+
+    /// Get FFT size
+    pub fn get_size(&self) -> usize {
+        self.size
+    }
+
+    /// Get spectrum size (N/2 bins)
+    pub fn get_spectrum_size(&self) -> usize {
+        self.size / 2
+    }
+
+    /// Compute spectrum from time-domain samples
+    /// Returns magnitude in dB (20 * log10(|X|))
+    pub fn compute(&mut self, samples: &[f32]) -> Vec<f32> {
+        let n = self.size.min(samples.len());
+
+        for i in 0..self.size {
+            if i < n {
+                self.scratch[i] = Complex::new(samples[i] * self.window[i], 0.0);
+            } else {
+                self.scratch[i] = Complex::new(0.0, 0.0);
+            }
+        }
+
+        let mut planner = FftPlanner::new();
+        let fft = planner.plan_fft_forward(self.size);
+        fft.process(&mut self.scratch);
+
+        let scale = 1.0 / (self.size as f32).sqrt();
+        for i in 0..self.size / 2 {
+            let mag = self.scratch[i].norm() * scale;
+            self.spectrum[i] = if mag > 1e-10 {
+                20.0 * mag.log10()
+            } else {
+                -200.0
+            };
+        }
+
+        self.spectrum.clone()
+    }
+
+    /// Get spectrum pointer for JS access
+    pub fn get_spectrum_ptr(&self) -> *const f32 {
+        self.spectrum.as_ptr()
+    }
+
+    /// Find peak frequency bin
+    pub fn find_peak_bin(&self) -> usize {
+        let mut max_val = f32::NEG_INFINITY;
+        let mut max_idx = 0;
+        for (i, &val) in self.spectrum.iter().enumerate() {
+            if val > max_val {
+                max_val = val;
+                max_idx = i;
+            }
+        }
+        max_idx
+    }
+
+    /// Convert bin index to normalized frequency
+    pub fn bin_to_frequency(&self, bin: usize) -> f32 {
+        bin as f32 / self.size as f32
     }
 }
 

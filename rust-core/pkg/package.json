@@ -2,10 +2,10 @@
   "name": "photonlab-core",
   "type": "module",
   "collaborators": [
-    "PhotonLab Team"
+    "Mehmet Gümüş <github.com/SpaceEngineerSS>"
   ],
-  "description": "High-performance FDTD electromagnetic solver in Rust/Wasm",
-  "version": "0.1.0",
+  "description": "High-performance FDTD electromagnetic solver in Rust/Wasm - Engineering Suite",
+  "version": "2.0.0",
   "files": [
     "photonlab_core_bg.wasm",
     "photonlab_core.js",

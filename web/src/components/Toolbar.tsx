@@ -2,13 +2,15 @@
  * Toolbar Component
  * 
  * Floating toolbar for selecting drawing tools, materials, and brush settings.
+ * 
+ * Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
  */
 
 import { useState, useCallback } from 'react';
 import './Toolbar.css';
 
-// Tool types
-export type ToolType = 'select' | 'brush' | 'rect' | 'eraser' | 'source';
+// Tool types (v2.0: added circle, ellipse, line)
+export type ToolType = 'select' | 'brush' | 'line' | 'rect' | 'circle' | 'ellipse' | 'eraser' | 'source';
 
 // Material IDs (must match Rust set_cell_material)
 export const MATERIALS = [
@@ -21,11 +23,14 @@ export const MATERIALS = [
     { id: 6, name: 'Silicon', color: '#e67e22', icon: '🔶' },
 ] as const;
 
-// Tool definitions
+// Tool definitions (v2.0: expanded with CAD tools)
 export const TOOLS = [
     { id: 'select' as ToolType, name: 'Select', icon: '🖱️', shortcut: 'V' },
     { id: 'brush' as ToolType, name: 'Brush', icon: '✏️', shortcut: 'B' },
+    { id: 'line' as ToolType, name: 'Line', icon: '📏', shortcut: 'L' },
     { id: 'rect' as ToolType, name: 'Rectangle', icon: '🟥', shortcut: 'R' },
+    { id: 'circle' as ToolType, name: 'Circle', icon: '⭕', shortcut: 'C' },
+    { id: 'ellipse' as ToolType, name: 'Ellipse', icon: '🔵', shortcut: 'O' },
     { id: 'eraser' as ToolType, name: 'Eraser', icon: '🧹', shortcut: 'E' },
     { id: 'source' as ToolType, name: 'Source', icon: '💥', shortcut: 'S' },
 ] as const;

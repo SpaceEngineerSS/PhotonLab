@@ -1,10 +1,13 @@
 /**
- * useSimulation Hook
+ * useSimulation Hook v2.0
  * 
  * Manages the FDTD simulation lifecycle:
  * - Loads Wasm module asynchronously
  * - Provides animation loop control
  * - Exposes simulation state and controls to React components
+ * - v2.0: Enhanced with CAD drawing tools and shape handlers
+ * 
+ * Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
  */
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
@@ -36,7 +39,9 @@ export interface SimulationControls {
   paintCircle: (cx: number, cy: number, radius: number, materialId: number) => void;
   paintRect: (x1: number, y1: number, x2: number, y2: number, materialId: number) => void;
   paintLine: (x1: number, y1: number, x2: number, y2: number, brushSize: number, materialId: number) => void;
+  paintEllipse: (cx: number, cy: number, rx: number, ry: number, materialId: number) => void;
   clearMaterials: () => void;
+  getMaterialAt: (x: number, y: number) => number;
   // Scenario loading
   loadPreset: (scenarioId: number) => void;
   // Plane wave sources
@@ -288,6 +293,21 @@ export function useSimulation() {
       if (onFrameCallbackRef.current) {
         onFrameCallbackRef.current();
       }
+    },
+
+    paintEllipse: (cx: number, cy: number, rx: number, ry: number, materialId: number) => {
+      const grid = gridRef.current;
+      if (!grid) return;
+      grid.paint_ellipse(cx, cy, rx, ry, materialId);
+      if (onFrameCallbackRef.current) {
+        onFrameCallbackRef.current();
+      }
+    },
+
+    getMaterialAt: (x: number, y: number): number => {
+      const grid = gridRef.current;
+      if (!grid) return 0;
+      return grid.get_material_at(x, y);
     },
 
     loadPreset: (scenarioId: number) => {

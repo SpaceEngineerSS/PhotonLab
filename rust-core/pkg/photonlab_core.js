@@ -134,6 +134,16 @@ export class FDTDGrid {
         return ret >>> 0;
     }
     /**
+     * Get material ID at a specific cell (for property inspector)
+     * @param {number} x
+     * @param {number} y
+     * @returns {number}
+     */
+    get_material_at(x, y) {
+        const ret = wasm.fdtdgrid_get_material_at(this.__wbg_ptr, x, y);
+        return ret >>> 0;
+    }
+    /**
      * Get scenario count
      * @returns {number}
      */
@@ -213,7 +223,7 @@ export class FDTDGrid {
     /**
      * Load a preset scenario by ID
      * 0=Empty, 1=DoubleSlit, 2=Waveguide, 3=ParabolicReflector,
-     * 4=TotalInternalReflection, 5=PhotonicCrystal, 6=Lens
+     * 4=TotalInternalReflection, 5=PhotonicCrystal, 6=Lens, 7=FresnelLens
      * @param {number} scenario_id
      */
     load_preset(scenario_id) {
@@ -244,6 +254,18 @@ export class FDTDGrid {
      */
     paint_circle(cx, cy, radius, material_id) {
         wasm.fdtdgrid_paint_circle(this.__wbg_ptr, cx, cy, radius, material_id);
+    }
+    /**
+     * Paint an axis-aligned ellipse with the specified material
+     * Uses midpoint ellipse algorithm for rasterization
+     * @param {number} cx
+     * @param {number} cy
+     * @param {number} rx
+     * @param {number} ry
+     * @param {number} material_id
+     */
+    paint_ellipse(cx, cy, rx, ry, material_id) {
+        wasm.fdtdgrid_paint_ellipse(this.__wbg_ptr, cx, cy, rx, ry, material_id);
     }
     /**
      * Paint a line from (x1,y1) to (x2,y2) with specified brush size and material
@@ -353,6 +375,79 @@ export class FDTDGrid {
     }
 }
 if (Symbol.dispose) FDTDGrid.prototype[Symbol.dispose] = FDTDGrid.prototype.free;
+
+/**
+ * Gaussian Beam Source with spatial intensity profile
+ * I(y) = I_0 * exp(-2(y-y_c)²/w²) where w is beam waist
+ */
+export class GaussianBeamSource {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        GaussianBeamSourceFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_gaussianbeamsource_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get_frequency() {
+        const ret = wasm.gaussianbeamsource_get_frequency(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Get beam parameters for UI display
+     * @returns {number}
+     */
+    get_waist() {
+        const ret = wasm.gaussianbeamsource_get_waist(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Inject Gaussian beam into Ez field
+     * @param {Float32Array} ez
+     * @param {number} t
+     * @param {number} width
+     * @param {number} height
+     */
+    inject(ez, t, width, height) {
+        var ptr0 = passArrayF32ToWasm0(ez, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.gaussianbeamsource_inject(this.__wbg_ptr, ptr0, len0, ez, t, width, height);
+    }
+    /**
+     * @param {number} x
+     * @param {number} y_center
+     * @param {number} waist
+     * @param {number} frequency
+     * @param {number} amplitude
+     * @param {number} courant
+     */
+    constructor(x, y_center, waist, frequency, amplitude, courant) {
+        const ret = wasm.gaussianbeamsource_new(x, y_center, waist, frequency, amplitude, courant);
+        this.__wbg_ptr = ret >>> 0;
+        GaussianBeamSourceFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Set center position
+     * @param {number} y_center
+     */
+    set_center(y_center) {
+        wasm.gaussianbeamsource_set_center(this.__wbg_ptr, y_center);
+    }
+    /**
+     * Set beam waist (width at 1/e² intensity)
+     * @param {number} waist
+     */
+    set_waist(waist) {
+        wasm.gaussianbeamsource_set_waist(this.__wbg_ptr, waist);
+    }
+}
+if (Symbol.dispose) GaussianBeamSource.prototype[Symbol.dispose] = GaussianBeamSource.prototype.free;
 
 /**
  * Material properties for electromagnetic simulation
@@ -597,6 +692,75 @@ export const MaterialType = Object.freeze({
 });
 
 /**
+ * Phased Array Source for beamforming applications
+ * E(t) = Σ A_n * sin(ωt + φ_n) where φ_n is the phase offset for element n
+ */
+export class PhasedArraySource {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        PhasedArraySourceFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_phasedarraysource_free(ptr, 0);
+    }
+    /**
+     * Get number of elements
+     * @returns {number}
+     */
+    get_element_count() {
+        const ret = wasm.phasedarraysource_get_element_count(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Inject phased array into Ez field
+     * @param {Float32Array} ez
+     * @param {number} t
+     * @param {number} width
+     * @param {number} height
+     */
+    inject(ez, t, width, height) {
+        var ptr0 = passArrayF32ToWasm0(ez, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.phasedarraysource_inject(this.__wbg_ptr, ptr0, len0, ez, t, width, height);
+    }
+    /**
+     * Create a linear phased array along y-axis at position x
+     * @param {number} x
+     * @param {number} y_start
+     * @param {number} num_elements
+     * @param {number} spacing
+     * @param {number} frequency
+     * @param {number} courant
+     */
+    constructor(x, y_start, num_elements, spacing, frequency, courant) {
+        const ret = wasm.phasedarraysource_new_linear(x, y_start, num_elements, spacing, frequency, courant);
+        this.__wbg_ptr = ret >>> 0;
+        PhasedArraySourceFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Set phase for a specific element (for beam steering)
+     * @param {number} index
+     * @param {number} phase
+     */
+    set_element_phase(index, phase) {
+        wasm.phasedarraysource_set_element_phase(this.__wbg_ptr, index, phase);
+    }
+    /**
+     * Set progressive phase shift for beam steering
+     * delta_phi: phase difference between adjacent elements
+     * @param {number} delta_phi
+     */
+    set_progressive_phase(delta_phi) {
+        wasm.phasedarraysource_set_progressive_phase(this.__wbg_ptr, delta_phi);
+    }
+}
+if (Symbol.dispose) PhasedArraySource.prototype[Symbol.dispose] = PhasedArraySource.prototype.free;
+
+/**
  * Plane wave source configuration
  */
 export class PlaneWaveSource {
@@ -776,7 +940,7 @@ if (Symbol.dispose) Probe.prototype[Symbol.dispose] = Probe.prototype.free;
 
 /**
  * Scenario preset IDs
- * @enum {0 | 1 | 2 | 3 | 4 | 5 | 6}
+ * @enum {0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}
  */
 export const ScenarioId = Object.freeze({
     /**
@@ -807,7 +971,92 @@ export const ScenarioId = Object.freeze({
      * Lens focusing demonstration
      */
     Lens: 6, "6": "Lens",
+    /**
+     * Fresnel zone plate lens
+     */
+    FresnelLens: 7, "7": "FresnelLens",
 });
+
+/**
+ * Single element in a phased array
+ */
+export class SourceElement {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        SourceElementFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_sourceelement_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get amplitude() {
+        const ret = wasm.__wbg_get_sourceelement_amplitude(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get phase_offset() {
+        const ret = wasm.__wbg_get_sourceelement_phase_offset(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get x() {
+        const ret = wasm.__wbg_get_sourceelement_x(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    get y() {
+        const ret = wasm.__wbg_get_sourceelement_y(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set amplitude(arg0) {
+        wasm.__wbg_set_sourceelement_amplitude(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set phase_offset(arg0) {
+        wasm.__wbg_set_sourceelement_phase_offset(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set x(arg0) {
+        wasm.__wbg_set_sourceelement_x(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set y(arg0) {
+        wasm.__wbg_set_sourceelement_y(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @param {number} phase_offset
+     * @param {number} amplitude
+     */
+    constructor(x, y, phase_offset, amplitude) {
+        const ret = wasm.sourceelement_new(x, y, phase_offset, amplitude);
+        this.__wbg_ptr = ret >>> 0;
+        SourceElementFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+if (Symbol.dispose) SourceElement.prototype[Symbol.dispose] = SourceElement.prototype.free;
 
 /**
  * Time-domain source function
@@ -859,7 +1108,7 @@ export class SourceFunction {
      * @returns {number}
      */
     get_amplitude() {
-        const ret = wasm.sourcefunction_get_amplitude(this.__wbg_ptr);
+        const ret = wasm.gaussianbeamsource_get_frequency(this.__wbg_ptr);
         return ret;
     }
     /**
@@ -949,6 +1198,90 @@ export const SourceType = Object.freeze({
      */
     Hard: 5, "5": "Hard",
 });
+
+/**
+ * Spectrum Analyzer using FFT for frequency domain analysis
+ * Uses Hann windowing to reduce spectral leakage
+ */
+export class SpectrumAnalyzer {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        SpectrumAnalyzerFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_spectrumanalyzer_free(ptr, 0);
+    }
+    /**
+     * Convert bin index to normalized frequency
+     * @param {number} bin
+     * @returns {number}
+     */
+    bin_to_frequency(bin) {
+        const ret = wasm.spectrumanalyzer_bin_to_frequency(this.__wbg_ptr, bin);
+        return ret;
+    }
+    /**
+     * Compute spectrum from time-domain samples
+     * Returns magnitude in dB (20 * log10(|X|))
+     * @param {Float32Array} samples
+     * @returns {Float32Array}
+     */
+    compute(samples) {
+        const ptr0 = passArrayF32ToWasm0(samples, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.spectrumanalyzer_compute(this.__wbg_ptr, ptr0, len0);
+        var v2 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v2;
+    }
+    /**
+     * Find peak frequency bin
+     * @returns {number}
+     */
+    find_peak_bin() {
+        const ret = wasm.spectrumanalyzer_find_peak_bin(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Get FFT size
+     * @returns {number}
+     */
+    get_size() {
+        const ret = wasm.spectrumanalyzer_get_size(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Get spectrum pointer for JS access
+     * @returns {number}
+     */
+    get_spectrum_ptr() {
+        const ret = wasm.spectrumanalyzer_get_spectrum_ptr(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Get spectrum size (N/2 bins)
+     * @returns {number}
+     */
+    get_spectrum_size() {
+        const ret = wasm.spectrumanalyzer_get_spectrum_size(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Create a new spectrum analyzer
+     * size: FFT size (should be power of 2, e.g., 256, 512, 1024)
+     * @param {number} size
+     */
+    constructor(size) {
+        const ret = wasm.spectrumanalyzer_new(size);
+        this.__wbg_ptr = ret >>> 0;
+        SpectrumAnalyzerFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+if (Symbol.dispose) SpectrumAnalyzer.prototype[Symbol.dispose] = SpectrumAnalyzer.prototype.free;
 
 /**
  * Waveform types
@@ -1158,21 +1491,38 @@ const CPMLFinalization = (typeof FinalizationRegistry === 'undefined')
 const FDTDGridFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_fdtdgrid_free(ptr >>> 0, 1));
+const GaussianBeamSourceFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_gaussianbeamsource_free(ptr >>> 0, 1));
 const MaterialFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_material_free(ptr >>> 0, 1));
 const MaterialPresetsFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_materialpresets_free(ptr >>> 0, 1));
+const PhasedArraySourceFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_phasedarraysource_free(ptr >>> 0, 1));
 const PlaneWaveSourceFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_planewavesource_free(ptr >>> 0, 1));
 const ProbeFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_probe_free(ptr >>> 0, 1));
+const SourceElementFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_sourceelement_free(ptr >>> 0, 1));
 const SourceFunctionFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_sourcefunction_free(ptr >>> 0, 1));
+const SpectrumAnalyzerFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_spectrumanalyzer_free(ptr >>> 0, 1));
+
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
 
 function getArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;

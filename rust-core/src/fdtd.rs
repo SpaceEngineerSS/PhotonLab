@@ -1,7 +1,14 @@
-//! FDTD Grid Implementation
+//! FDTD Grid Implementation v2.0
 //!
 //! 2D TMz mode electromagnetic field solver using Yee lattice algorithm.
 //! Optimized for Wasm with flat 1D arrays for cache-friendly memory access.
+//!
+//! Features (v2.0):
+//! - Ellipse and polygon drawing tools
+//! - Material inspection for property editor
+//! - Enhanced scenario system
+//!
+//! Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
 
 use wasm_bindgen::prelude::*;
 
@@ -480,6 +487,63 @@ impl FDTDGrid {
                 y += sy;
             }
         }
+    }
+
+    /// Paint an axis-aligned ellipse with the specified material
+    /// Uses midpoint ellipse algorithm for rasterization
+    #[wasm_bindgen]
+    pub fn paint_ellipse(&mut self, cx: i32, cy: i32, rx: i32, ry: i32, material_id: u32) {
+        if rx <= 0 || ry <= 0 {
+            return;
+        }
+
+        let rx2 = (rx * rx) as f32;
+        let ry2 = (ry * ry) as f32;
+
+        let x_min = (cx - rx).max(0) as usize;
+        let x_max = ((cx + rx) as usize).min(self.width - 1);
+        let y_min = (cy - ry).max(0) as usize;
+        let y_max = ((cy + ry) as usize).min(self.height - 1);
+
+        for y in y_min..=y_max {
+            for x in x_min..=x_max {
+                let dx = x as f32 - cx as f32;
+                let dy = y as f32 - cy as f32;
+
+                if (dx * dx) / rx2 + (dy * dy) / ry2 <= 1.0 {
+                    self.set_cell_material(x, y, material_id);
+                }
+            }
+        }
+    }
+
+    /// Get material ID at a specific cell (for property inspector)
+    #[wasm_bindgen]
+    pub fn get_material_at(&self, x: usize, y: usize) -> u32 {
+        if x >= self.width || y >= self.height {
+            return 0;
+        }
+        let idx = y * self.width + x;
+        let cb = self.cb[idx];
+        let ca = self.ca[idx];
+
+        if ca == 0.0 && cb == 0.0 {
+            return 3;
+        }
+        if (cb - COURANT).abs() < 0.001 {
+            return 0;
+        }
+        if (cb - COURANT / 2.25).abs() < 0.001 {
+            return 1;
+        }
+        if (cb - COURANT / 4.0).abs() < 0.001 {
+            return 5;
+        }
+        if (cb - COURANT / 11.7).abs() < 0.001 {
+            return 6;
+        }
+
+        0
     }
 
     // ========================================================================

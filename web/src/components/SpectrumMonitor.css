@@ -1,0 +1,68 @@
+/**
+ * SpectrumMonitor Styles
+ * Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
+ */
+
+.spectrum-monitor {
+    background: var(--surface-glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.spectrum-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.spectrum-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.spectrum-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.scale-btn {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.scale-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.scale-btn.active {
+    background: rgba(78, 205, 196, 0.2);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.spectrum-canvas {
+    display: block;
+    border-radius: 0;
+}
+
+.peak-info {
+    padding: 8px 14px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: var(--text-secondary);
+    background: rgba(255, 107, 107, 0.1);
+    border-top: 1px solid var(--border-color);
+}

@@ -1,0 +1,92 @@
+/**
+ * Footer Styles
+ * Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
+ */
+
+.footer-area {
+    grid-area: footer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: var(--surface-glass);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-color);
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.version-badge {
+    padding: 2px 8px;
+    background: rgba(78, 205, 196, 0.15);
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    border-radius: var(--radius-sm);
+    color: var(--primary);
+    font-family: monospace;
+    font-weight: 600;
+    font-size: 0.65rem;
+}
+
+.divider {
+    color: var(--text-muted);
+}
+
+.signature {
+    color: var(--text-secondary);
+}
+
+.author-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.author-link:hover {
+    color: #6ee7de;
+    text-decoration: underline;
+}
+
+.github-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.github-link:hover {
+    color: var(--text-primary);
+}
+
+.github-icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .footer-area {
+        padding: 6px 12px;
+    }
+
+    .footer-content {
+        gap: 8px;
+        font-size: 0.65rem;
+    }
+
+    .github-link span {
+        display: none;
+    }
+
+    .divider:last-of-type {
+        display: none;
+    }
+}

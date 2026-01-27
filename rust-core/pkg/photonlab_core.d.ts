@@ -72,6 +72,10 @@ export class FDTDGrid {
      */
     get_height(): number;
     /**
+     * Get material ID at a specific cell (for property inspector)
+     */
+    get_material_at(x: number, y: number): number;
+    /**
      * Get scenario count
      */
     static get_scenario_count(): number;
@@ -114,7 +118,7 @@ export class FDTDGrid {
     /**
      * Load a preset scenario by ID
      * 0=Empty, 1=DoubleSlit, 2=Waveguide, 3=ParabolicReflector,
-     * 4=TotalInternalReflection, 5=PhotonicCrystal, 6=Lens
+     * 4=TotalInternalReflection, 5=PhotonicCrystal, 6=Lens, 7=FresnelLens
      */
     load_preset(scenario_id: number): void;
     /**
@@ -130,6 +134,11 @@ export class FDTDGrid {
      * Uses material_id: 0=Vacuum, 1=Glass, 2=Water, 3=Metal, 4=Absorber, 5=Crystal, 6=Silicon
      */
     paint_circle(cx: number, cy: number, radius: number, material_id: number): void;
+    /**
+     * Paint an axis-aligned ellipse with the specified material
+     * Uses midpoint ellipse algorithm for rasterization
+     */
+    paint_ellipse(cx: number, cy: number, rx: number, ry: number, material_id: number): void;
     /**
      * Paint a line from (x1,y1) to (x2,y2) with specified brush size and material
      * Uses Bresenham's line algorithm for smooth lines
@@ -188,6 +197,33 @@ export class FDTDGrid {
      * Hy(i,j) += Courant * (Ez(i+1,j) - Ez(i,j))
      */
     update_h(): void;
+}
+
+/**
+ * Gaussian Beam Source with spatial intensity profile
+ * I(y) = I_0 * exp(-2(y-y_c)²/w²) where w is beam waist
+ */
+export class GaussianBeamSource {
+    free(): void;
+    [Symbol.dispose](): void;
+    get_frequency(): number;
+    /**
+     * Get beam parameters for UI display
+     */
+    get_waist(): number;
+    /**
+     * Inject Gaussian beam into Ez field
+     */
+    inject(ez: Float32Array, t: number, width: number, height: number): void;
+    constructor(x: number, y_center: number, waist: number, frequency: number, amplitude: number, courant: number);
+    /**
+     * Set center position
+     */
+    set_center(y_center: number): void;
+    /**
+     * Set beam waist (width at 1/e² intensity)
+     */
+    set_waist(waist: number): void;
 }
 
 /**
@@ -305,6 +341,36 @@ export enum MaterialType {
 }
 
 /**
+ * Phased Array Source for beamforming applications
+ * E(t) = Σ A_n * sin(ωt + φ_n) where φ_n is the phase offset for element n
+ */
+export class PhasedArraySource {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Get number of elements
+     */
+    get_element_count(): number;
+    /**
+     * Inject phased array into Ez field
+     */
+    inject(ez: Float32Array, t: number, width: number, height: number): void;
+    /**
+     * Create a linear phased array along y-axis at position x
+     */
+    constructor(x: number, y_start: number, num_elements: number, spacing: number, frequency: number, courant: number);
+    /**
+     * Set phase for a specific element (for beam steering)
+     */
+    set_element_phase(index: number, phase: number): void;
+    /**
+     * Set progressive phase shift for beam steering
+     * delta_phi: phase difference between adjacent elements
+     */
+    set_progressive_phase(delta_phi: number): void;
+}
+
+/**
  * Plane wave source configuration
  */
 export class PlaneWaveSource {
@@ -414,6 +480,23 @@ export enum ScenarioId {
      * Lens focusing demonstration
      */
     Lens = 6,
+    /**
+     * Fresnel zone plate lens
+     */
+    FresnelLens = 7,
+}
+
+/**
+ * Single element in a phased array
+ */
+export class SourceElement {
+    free(): void;
+    [Symbol.dispose](): void;
+    constructor(x: number, y: number, phase_offset: number, amplitude: number);
+    amplitude: number;
+    phase_offset: number;
+    x: number;
+    y: number;
 }
 
 /**
@@ -486,6 +569,45 @@ export enum SourceType {
      * Hard source (replacement)
      */
     Hard = 5,
+}
+
+/**
+ * Spectrum Analyzer using FFT for frequency domain analysis
+ * Uses Hann windowing to reduce spectral leakage
+ */
+export class SpectrumAnalyzer {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Convert bin index to normalized frequency
+     */
+    bin_to_frequency(bin: number): number;
+    /**
+     * Compute spectrum from time-domain samples
+     * Returns magnitude in dB (20 * log10(|X|))
+     */
+    compute(samples: Float32Array): Float32Array;
+    /**
+     * Find peak frequency bin
+     */
+    find_peak_bin(): number;
+    /**
+     * Get FFT size
+     */
+    get_size(): number;
+    /**
+     * Get spectrum pointer for JS access
+     */
+    get_spectrum_ptr(): number;
+    /**
+     * Get spectrum size (N/2 bins)
+     */
+    get_spectrum_size(): number;
+    /**
+     * Create a new spectrum analyzer
+     * size: FFT size (should be power of 2, e.g., 256, 512, 1024)
+     */
+    constructor(size: number);
 }
 
 /**
@@ -565,6 +687,71 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly __wbg_sourcefunction_free: (a: number, b: number) => void;
+    readonly __wbg_get_sourcefunction_waveform: (a: number) => number;
+    readonly __wbg_set_sourcefunction_waveform: (a: number, b: number) => void;
+    readonly sourcefunction_new_sinusoidal: (a: number, b: number) => number;
+    readonly sourcefunction_new_gaussian: (a: number, b: number, c: number) => number;
+    readonly sourcefunction_new_modulated_gaussian: (a: number, b: number, c: number, d: number) => number;
+    readonly sourcefunction_new_ricker: (a: number, b: number, c: number) => number;
+    readonly sourcefunction_evaluate: (a: number, b: number) => number;
+    readonly sourcefunction_set_amplitude: (a: number, b: number) => void;
+    readonly __wbg_planewavesource_free: (a: number, b: number) => void;
+    readonly planewavesource_new_vertical: (a: number, b: number, c: number) => number;
+    readonly planewavesource_new_horizontal: (a: number, b: number, c: number) => number;
+    readonly planewavesource_get_position: (a: number) => number;
+    readonly planewavesource_set_gaussian: (a: number, b: number, c: number) => void;
+    readonly planewavesource_inject: (a: number, b: number, c: number, d: any, e: number, f: number, g: number) => void;
+    readonly __wbg_sourceelement_free: (a: number, b: number) => void;
+    readonly __wbg_get_sourceelement_x: (a: number) => number;
+    readonly __wbg_set_sourceelement_x: (a: number, b: number) => void;
+    readonly __wbg_get_sourceelement_y: (a: number) => number;
+    readonly __wbg_set_sourceelement_y: (a: number, b: number) => void;
+    readonly __wbg_get_sourceelement_phase_offset: (a: number) => number;
+    readonly __wbg_set_sourceelement_phase_offset: (a: number, b: number) => void;
+    readonly __wbg_get_sourceelement_amplitude: (a: number) => number;
+    readonly __wbg_set_sourceelement_amplitude: (a: number, b: number) => void;
+    readonly sourceelement_new: (a: number, b: number, c: number, d: number) => number;
+    readonly __wbg_phasedarraysource_free: (a: number, b: number) => void;
+    readonly phasedarraysource_new_linear: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly phasedarraysource_set_element_phase: (a: number, b: number, c: number) => void;
+    readonly phasedarraysource_set_progressive_phase: (a: number, b: number) => void;
+    readonly phasedarraysource_get_element_count: (a: number) => number;
+    readonly phasedarraysource_inject: (a: number, b: number, c: number, d: any, e: number, f: number, g: number) => void;
+    readonly __wbg_gaussianbeamsource_free: (a: number, b: number) => void;
+    readonly gaussianbeamsource_new: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly gaussianbeamsource_set_waist: (a: number, b: number) => void;
+    readonly gaussianbeamsource_set_center: (a: number, b: number) => void;
+    readonly gaussianbeamsource_inject: (a: number, b: number, c: number, d: any, e: number, f: number, g: number) => void;
+    readonly gaussianbeamsource_get_waist: (a: number) => number;
+    readonly gaussianbeamsource_get_frequency: (a: number) => number;
+    readonly __wbg_probe_free: (a: number, b: number) => void;
+    readonly probe_new: (a: number, b: number, c: number) => number;
+    readonly probe_get_x: (a: number) => number;
+    readonly probe_get_y: (a: number) => number;
+    readonly probe_set_position: (a: number, b: number, c: number) => void;
+    readonly probe_record: (a: number, b: number, c: number, d: number) => void;
+    readonly probe_get_buffer_ptr: (a: number) => number;
+    readonly probe_get_buffer_size: (a: number) => number;
+    readonly probe_get_current_value: (a: number) => number;
+    readonly probe_clear: (a: number) => void;
+    readonly __wbg_spectrumanalyzer_free: (a: number, b: number) => void;
+    readonly spectrumanalyzer_new: (a: number) => number;
+    readonly spectrumanalyzer_get_size: (a: number) => number;
+    readonly spectrumanalyzer_get_spectrum_size: (a: number) => number;
+    readonly spectrumanalyzer_compute: (a: number, b: number, c: number) => [number, number];
+    readonly spectrumanalyzer_get_spectrum_ptr: (a: number) => number;
+    readonly spectrumanalyzer_find_peak_bin: (a: number) => number;
+    readonly spectrumanalyzer_bin_to_frequency: (a: number, b: number) => number;
+    readonly gaussian_pulse: (a: number, b: number, c: number) => number;
+    readonly modulated_gaussian: (a: number, b: number, c: number, d: number) => number;
+    readonly sourcefunction_get_amplitude: (a: number) => number;
+    readonly probe_get_write_pos: (a: number) => number;
+    readonly get_scenario_name: (a: number) => [number, number];
+    readonly get_scenario_description: (a: number) => [number, number];
+    readonly get_version: () => [number, number];
+    readonly get_wasm_memory: () => any;
+    readonly init: () => void;
     readonly __wbg_fdtdgrid_free: (a: number, b: number) => void;
     readonly fdtdgrid_new: (a: number, b: number) => number;
     readonly fdtdgrid_get_width: (a: number) => number;
@@ -589,6 +776,8 @@ export interface InitOutput {
     readonly fdtdgrid_paint_rect: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly fdtdgrid_set_cell_material: (a: number, b: number, c: number, d: number) => void;
     readonly fdtdgrid_paint_line: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
+    readonly fdtdgrid_paint_ellipse: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
+    readonly fdtdgrid_get_material_at: (a: number, b: number, c: number) => number;
     readonly fdtdgrid_load_preset: (a: number, b: number) => void;
     readonly fdtdgrid_get_scenario_count: () => number;
     readonly fdtdgrid_inject_plane_wave_x: (a: number, b: number, c: number) => void;
@@ -597,37 +786,6 @@ export interface InitOutput {
     readonly fdtdgrid_inject_gaussian_plane_wave: (a: number, b: number, c: number, d: number) => void;
     readonly fdtdgrid_get_field_at: (a: number, b: number, c: number) => number;
     readonly fdtdgrid_get_courant: () => number;
-    readonly get_scenario_name: (a: number) => [number, number];
-    readonly get_scenario_description: (a: number) => [number, number];
-    readonly __wbg_sourcefunction_free: (a: number, b: number) => void;
-    readonly __wbg_get_sourcefunction_waveform: (a: number) => number;
-    readonly __wbg_set_sourcefunction_waveform: (a: number, b: number) => void;
-    readonly sourcefunction_new_sinusoidal: (a: number, b: number) => number;
-    readonly sourcefunction_new_gaussian: (a: number, b: number, c: number) => number;
-    readonly sourcefunction_new_modulated_gaussian: (a: number, b: number, c: number, d: number) => number;
-    readonly sourcefunction_new_ricker: (a: number, b: number, c: number) => number;
-    readonly sourcefunction_evaluate: (a: number, b: number) => number;
-    readonly sourcefunction_get_amplitude: (a: number) => number;
-    readonly sourcefunction_set_amplitude: (a: number, b: number) => void;
-    readonly __wbg_planewavesource_free: (a: number, b: number) => void;
-    readonly planewavesource_new_vertical: (a: number, b: number, c: number) => number;
-    readonly planewavesource_new_horizontal: (a: number, b: number, c: number) => number;
-    readonly planewavesource_get_position: (a: number) => number;
-    readonly planewavesource_set_gaussian: (a: number, b: number, c: number) => void;
-    readonly planewavesource_inject: (a: number, b: number, c: number, d: any, e: number, f: number, g: number) => void;
-    readonly __wbg_probe_free: (a: number, b: number) => void;
-    readonly probe_new: (a: number, b: number, c: number) => number;
-    readonly probe_get_x: (a: number) => number;
-    readonly probe_get_y: (a: number) => number;
-    readonly probe_set_position: (a: number, b: number, c: number) => void;
-    readonly probe_record: (a: number, b: number, c: number, d: number) => void;
-    readonly probe_get_buffer_ptr: (a: number) => number;
-    readonly probe_get_buffer_size: (a: number) => number;
-    readonly probe_get_current_value: (a: number) => number;
-    readonly probe_clear: (a: number) => void;
-    readonly gaussian_pulse: (a: number, b: number, c: number) => number;
-    readonly modulated_gaussian: (a: number, b: number, c: number, d: number) => number;
-    readonly probe_get_write_pos: (a: number) => number;
     readonly __wbg_cpml_free: (a: number, b: number) => void;
     readonly cpml_new: (a: number, b: number, c: number) => number;
     readonly cpml_get_thickness: (a: number) => number;
@@ -657,9 +815,6 @@ export interface InitOutput {
     readonly get_material_by_id: (a: number) => number;
     readonly get_material_name: (a: number) => [number, number];
     readonly materialpresets_metal: () => number;
-    readonly get_version: () => [number, number];
-    readonly get_wasm_memory: () => any;
-    readonly init: () => void;
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

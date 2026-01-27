@@ -104,6 +104,8 @@ interface SimCanvasProps {
     onMouseMove?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
     onMouseUp?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
     cursorStyle?: string;
+    // v2.0: Optional external canvas ref for export functionality
+    canvasRef?: React.RefObject<HTMLCanvasElement | null>;
 }
 
 export function SimCanvas({
@@ -116,16 +118,25 @@ export function SimCanvas({
     onMouseMove,
     onMouseUp,
     cursorStyle = 'crosshair',
+    canvasRef: externalCanvasRef,
 }: SimCanvasProps) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const internalCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const glRef = useRef<WebGL2RenderingContext | null>(null);
     const textureRef = useRef<WebGLTexture | null>(null);
     const programRef = useRef<WebGLProgram | null>(null);
     const gainUniformRef = useRef<WebGLUniformLocation | null>(null);
 
+    // Callback ref to set both internal and external refs
+    const setCanvasRef = useCallback((canvas: HTMLCanvasElement | null) => {
+        internalCanvasRef.current = canvas;
+        if (externalCanvasRef && 'current' in externalCanvasRef) {
+            (externalCanvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = canvas;
+        }
+    }, [externalCanvasRef]);
+
     // Initialize WebGL2
     useEffect(() => {
-        const canvas = canvasRef.current;
+        const canvas = internalCanvasRef.current;
         if (!canvas) return;
 
         // Get WebGL2 context with floating point texture support
@@ -268,7 +279,7 @@ export function SimCanvas({
 
     return (
         <canvas
-            ref={canvasRef}
+            ref={setCanvasRef}
             width={width}
             height={height}
             onMouseDown={onMouseDown}

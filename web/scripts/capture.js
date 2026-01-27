@@ -1,246 +1,190 @@
 /**
- * PhotonLab Screenshot Capture Bot
+ * PhotonLab v2.0 Screenshot Bot
  * 
- * Automated screenshot generation using Puppeteer.
- * Captures scenario-specific screenshots for README and documentation.
+ * Captures high-quality screenshots of the Engineering Suite UI
+ * for documentation and promotional materials.
  * 
- * Usage: npm run capture (requires dev server running on localhost:5173)
+ * Usage: node scripts/capture.js
+ * Requires: puppeteer (npm install puppeteer)
+ * 
+ * Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
  */
 
 import puppeteer from 'puppeteer';
-import { mkdir } from 'fs/promises';
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
-// Configuration
-const CONFIG = {
-    baseUrl: 'http://localhost:5173',
-    viewport: { width: 1920, height: 1080 },
-    outputDir: join(__dirname, '..', 'screenshots'),
-    timeout: 30000,
-};
+const SCREENSHOTS_DIR = path.join(__dirname, '../screenshots');
+const DEV_SERVER_URL = 'http://localhost:5173';
 
-// Helper functions
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Ensure screenshots directory exists
+if (!fs.existsSync(SCREENSHOTS_DIR)) {
+    fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+}
 
-const log = (emoji, message) => {
-    console.log(`${emoji} ${message}`);
-};
+// Helper: Wait for specified milliseconds
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * Click element containing specific text
- */
-async function clickText(page, text, options = {}) {
-    const { timeout = 5000 } = options;
-
+// Helper: Safe click with wait
+const safeClick = async (page, selector) => {
     try {
-        // Try button first
-        const buttonSelector = `button:has-text("${text}")`;
-        await page.waitForSelector(`button`, { timeout: 2000 });
-
-        const buttons = await page.$$('button');
-        for (const button of buttons) {
-            const buttonText = await button.evaluate(el => el.textContent);
-            if (buttonText && buttonText.includes(text)) {
-                await button.click();
-                log('🖱️', `Clicked: "${text}"`);
-                return true;
-            }
-        }
-
-        // Try any clickable element
-        const elements = await page.$$('*');
-        for (const el of elements) {
-            const elText = await el.evaluate(e => e.textContent);
-            if (elText && elText.includes(text)) {
-                await el.click();
-                log('🖱️', `Clicked element: "${text}"`);
-                return true;
-            }
-        }
-
-        throw new Error(`Element with text "${text}" not found`);
-    } catch (error) {
-        log('⚠️', `Could not click "${text}": ${error.message}`);
+        await page.waitForSelector(selector, { timeout: 5000 });
+        await page.click(selector);
+        return true;
+    } catch {
+        console.warn(`⚠️ Selector not found: ${selector}`);
         return false;
     }
-}
+};
 
-/**
- * Capture screenshot with logging
- */
-async function capture(page, filename) {
-    const filepath = join(CONFIG.outputDir, filename);
-    await page.screenshot({
-        path: filepath,
-        type: 'png',
-        fullPage: false,
-    });
-    log('📸', `Captured: ${filename}`);
-    return filepath;
-}
+(async () => {
+    console.log('📸 PhotonLab v2.0 Photographer');
+    console.log('================================\n');
 
-/**
- * Main capture sequence
- */
-async function main() {
-    log('🚀', 'PhotonLab Screenshot Bot Starting...');
-    log('📁', `Output directory: ${CONFIG.outputDir}`);
-
-    // Ensure output directory exists
-    await mkdir(CONFIG.outputDir, { recursive: true });
-
-    // Launch browser
     const browser = await puppeteer.launch({
         headless: 'new',
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            `--window-size=${CONFIG.viewport.width},${CONFIG.viewport.height}`,
-        ],
+        defaultViewport: { width: 1920, height: 1080 },
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
     const page = await browser.newPage();
-    await page.setViewport(CONFIG.viewport);
 
     try {
-        // Navigate to app
-        log('🌐', `Navigating to ${CONFIG.baseUrl}...`);
-        await page.goto(CONFIG.baseUrl, {
+        console.log('🌐 Loading PhotonLab...');
+        await page.goto(DEV_SERVER_URL, {
             waitUntil: 'networkidle0',
-            timeout: CONFIG.timeout,
+            timeout: 30000
+        });
+        await wait(3000); // Let WebGL initialize
+
+        // ============================================
+        // SHOT 1: Engineering Dashboard (Main View)
+        // ============================================
+        console.log('📸 Capturing: 01_engineering_dashboard.png');
+
+        // Click Play button (find by text content)
+        const playClicked = await page.evaluate(() => {
+            const buttons = document.querySelectorAll('button.control-btn');
+            for (const btn of buttons) {
+                if (btn.textContent?.includes('Play')) {
+                    btn.click();
+                    return true;
+                }
+            }
+            return false;
+        });
+        if (playClicked) {
+            console.log('   ▶ Simulation started');
+        } else {
+            console.warn('⚠️ Play button not found');
+        }
+        await wait(2000); // Let waves propagate
+
+        await page.screenshot({
+            path: path.join(SCREENSHOTS_DIR, '01_engineering_dashboard.png'),
+            type: 'png'
         });
 
-        // Wait for initial render
-        await sleep(2000);
+        // ============================================
+        // SHOT 2: CAD Mode - Drawing Structures
+        // ============================================
+        console.log('📸 Capturing: 02_cad_mode.png');
 
-        // ========================================
-        // Capture 1: Main Interface
-        // ========================================
-        log('⏳', 'Waiting for main interface...');
-        await sleep(1000);
-        await capture(page, '01_main_interface.png');
+        // Select Brush Tool (keyboard shortcut)
+        await page.keyboard.press('b');
+        await wait(500);
 
-        // ========================================
-        // Capture 2: Double Slit Scenario
-        // ========================================
-        log('🧪', 'Loading Double Slit scenario...');
-
-        // Open scenario dropdown
-        await clickText(page, 'Select Scenario');
-        await sleep(500);
-
-        // Click Double Slit
-        await clickText(page, 'Double Slit');
-        await sleep(500);
-
-        // Click Play button
-        await clickText(page, 'Play');
-        await sleep(4000); // Wait for waves to propagate
-
-        await capture(page, '02_double_slit.png');
-
-        // ========================================
-        // Capture 3: Parabolic Reflector
-        // ========================================
-        log('🧪', 'Loading Parabolic Reflector scenario...');
-
-        // Pause first
-        await clickText(page, 'Pause');
-        await sleep(300);
-
-        // Open scenario dropdown
-        await clickText(page, 'Double Slit');
-        await sleep(500);
-
-        // Click Parabolic Reflector
-        await clickText(page, 'Parabolic');
-        await sleep(500);
-
-        // Click Play
-        await clickText(page, 'Play');
-        await sleep(3000);
-
-        await capture(page, '03_parabolic_reflector.png');
-
-        // ========================================
-        // Capture 4: Signal Monitor (Pulse + Probe)
-        // ========================================
-        log('🧪', 'Setting up Signal Monitor demo...');
-
-        // Pause
-        await clickText(page, 'Pause');
-        await sleep(300);
-
-        // Load empty grid
-        await clickText(page, 'Parabolic');
-        await sleep(500);
-        await clickText(page, 'Empty');
-        await sleep(500);
-
-        // Click Select tool
-        await clickText(page, 'Select');
-        await sleep(300);
-
-        // Click canvas center to place probe
-        const canvasArea = await page.$('.canvas-area');
-        if (canvasArea) {
-            const box = await canvasArea.boundingBox();
+        // Get canvas position
+        const canvas = await page.$('canvas');
+        if (canvas) {
+            const box = await canvas.boundingBox();
             if (box) {
-                await page.mouse.click(
-                    box.x + box.width / 2,
-                    box.y + box.height / 2
-                );
-                log('🎯', 'Placed probe at canvas center');
+                // Draw a prism-like structure
+                await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
+                await page.mouse.down();
+
+                // Draw diagonal line
+                for (let i = 0; i < 20; i++) {
+                    await page.mouse.move(
+                        box.x + box.width * (0.3 + i * 0.01),
+                        box.y + box.height * (0.3 + i * 0.01)
+                    );
+                    await wait(30);
+                }
+                await page.mouse.up();
+
+                await wait(1500); // Let waves interact with structure
             }
         }
-        await sleep(500);
 
-        // Click Pulse to add energy
-        await clickText(page, 'Pulse');
-        await sleep(300);
+        await page.screenshot({
+            path: path.join(SCREENSHOTS_DIR, '02_cad_mode.png'),
+            type: 'png'
+        });
 
-        // Play simulation
-        await clickText(page, 'Play');
-        await sleep(3000);
+        // ============================================
+        // SHOT 3: Rectangle Tool Demo
+        // ============================================
+        console.log('📸 Capturing: 03_rectangle_tool.png');
 
-        await capture(page, '04_signal_monitor.png');
+        // Select Rectangle Tool
+        await page.keyboard.press('r');
+        await wait(500);
 
-        // ========================================
-        // Capture 5: Lens Scenario
-        // ========================================
-        log('🧪', 'Loading Lens scenario...');
+        if (canvas) {
+            const box = await canvas.boundingBox();
+            if (box) {
+                // Draw a rectangle
+                await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.2);
+                await page.mouse.down();
+                await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.4);
+                await page.mouse.up();
 
-        await clickText(page, 'Pause');
-        await sleep(300);
+                await wait(1500);
+            }
+        }
 
-        await clickText(page, 'Empty');
-        await sleep(500);
-        await clickText(page, 'Lens');
-        await sleep(500);
+        await page.screenshot({
+            path: path.join(SCREENSHOTS_DIR, '03_rectangle_tool.png'),
+            type: 'png'
+        });
 
-        await clickText(page, 'Play');
-        await sleep(3000);
+        // ============================================
+        // SHOT 4: Wave Interference Pattern
+        // ============================================
+        console.log('📸 Capturing: 04_wave_interference.png');
 
-        await capture(page, '05_lens_focusing.png');
+        // Let simulation run for beautiful interference
+        await wait(3000);
 
-        // ========================================
-        // Done!
-        // ========================================
-        log('✅', 'All screenshots captured successfully!');
-        log('📂', `Screenshots saved to: ${CONFIG.outputDir}`);
+        await page.screenshot({
+            path: path.join(SCREENSHOTS_DIR, '04_wave_interference.png'),
+            type: 'png'
+        });
+
+        // ============================================
+        // SHOT 5: Mobile View (Responsive)
+        // ============================================
+        console.log('📸 Capturing: 05_mobile_view.png');
+
+        await page.setViewport({ width: 375, height: 812, isMobile: true });
+        await wait(1000);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOTS_DIR, '05_mobile_view.png'),
+            type: 'png'
+        });
+
+        console.log('\n✅ Photoshoot Complete!');
+        console.log(`📁 Screenshots saved to: ${SCREENSHOTS_DIR}`);
 
     } catch (error) {
-        log('❌', `Error: ${error.message}`);
-        console.error(error);
+        console.error('❌ Error during capture:', error.message);
     } finally {
         await browser.close();
-        log('👋', 'Browser closed. Done!');
     }
-}
-
-// Run
-main().catch(console.error);
+})();

@@ -1,9 +1,11 @@
-//! PhotonLab Core - FDTD Electromagnetic Solver
+//! PhotonLab Core - FDTD Electromagnetic Solver v2.0
 //!
 //! High-performance 2D electromagnetic field solver using the
 //! Finite-Difference Time-Domain (FDTD) method with Yee lattice algorithm.
 //!
 //! Compiled to WebAssembly for browser-based simulation.
+//!
+//! Author: Mehmet Gümüş (github.com/SpaceEngineerSS)
 
 mod cpml;
 mod fdtd;
@@ -27,9 +29,21 @@ pub use cpml::CPML;
 // Re-export scenarios
 pub use scenarios::{get_scenario_description, get_scenario_name, ScenarioId};
 
-// Re-export sources
+// Re-export sources (v2.0: includes phased arrays, gaussian beam, spectrum analyzer)
 pub use sources::{
-    gaussian_pulse, modulated_gaussian, PlaneWaveSource, Probe, SourceFunction, SourceType,
+    gaussian_pulse,
+    modulated_gaussian,
+    GaussianBeamSource,
+    // Advanced sources (v2.0)
+    PhasedArraySource,
+    // Basic sources
+    PlaneWaveSource,
+    Probe,
+    SourceElement,
+    SourceFunction,
+    SourceType,
+    // Spectrum analysis (v2.0)
+    SpectrumAnalyzer,
     Waveform,
 };
 
